@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minishop - ระบบสั่งอาหาร</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto p-4">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-4">
+            <h1 class="text-2xl font-bold">Minishop</h1>
+            <div id="userProfile" class="flex items-center"></div>
+        </div>
+
+        <!-- Menu Filters -->
+        <div class="flex gap-2 mb-4">
+            <button onclick="filterMenu('อาหาร')" class="px-4 py-2 bg-blue-500 text-white rounded">อาหาร</button>
+            <button onclick="filterMenu('ของหวาน')" class="px-4 py-2 bg-blue-500 text-white rounded">ของหวาน</button>
+            <button onclick="filterMenu('เครื่องดื่ม')" class="px-4 py-2 bg-blue-500 text-white rounded">เครื่องดื่ม</button>
+        </div>
+
+        <!-- Menu List -->
+        <div id="menuList" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+
+        <!-- Cart -->
+        <div class="mt-6">
+            <h2 class="text-xl font-semibold">ตะกร้าสินค้า</h2>
+            <div id="cartItems" class="mt-2"></div>
+            <p class="mt-2 font-bold">ยอดรวม: <span id="totalPrice">0</span> บาท</p>
+            <button onclick="resetCart()" class="mt-2 px-4 py-2 bg-red-500 text-white rounded">รีเซ็ตตะกร้า</button>
+            <button onclick="showPaymentModal()" class="mt-2 px-4 py-2 bg-green-500 text-white rounded">ชำระเงิน</button>
+        </div>
+
+        <!-- Payment Modal -->
+        <div id="paymentModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
+            <div class="bg-white p-6 rounded shadow-lg w-96">
+                <h3 class="text-lg font-semibold">อัพโหลดสลิปการชำระเงิน</h3>
+                <input type="file" id="slipUpload" accept="image/*" class="mt-2">
+                <button onclick="submitOrder()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded">ยืนยัน</button>
+                <button onclick="hidePaymentModal()" class="mt-2 px-4 py-2 bg-gray-500 text-white rounded">ยกเลิก</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let cart = [];
+        let userData = {};
+
+        // Initialize LINE LIFF
+        async function initializeLiff() {
+            await liff.init({ liffId: "YOUR_LIFF_ID" }); // เปลี่ยนเป็น LIFF ID ของคุณ
+            if (liff.isLoggedIn()) {
+                const profile = await liff.getProfile();
+                userData = {
+                    userId: profile.userId,
+                    displayName: profile.displayName,
+                    pictureUrl: profile.pictureUrl
+                };
+                document.getElementById("userProfile").innerHTML = `
+                    <img src="${userData.pictureUrl}" class="w-10 h-10 rounded-full mr-2">
+                    <span>${userData.displayName}</span>
+                `;
+                loadMenu();
+            } else {
+                liff.login();
+            }
+        }
+
+        // Load Menu from Google Sheets
+        async function loadMenu() {
+            const response = await fetch("https://script.google.com/macros/s/AKfycbxestjAgoGecDNMvq8iO_F1HFUecUwrJo3gBeD9Hpf1A1o3Rcriq4DG76nLPRCG-1l9/exec?action=getMenu");
+            const menu = await response.json();
+            displayMenu(menu);
+        }
+
+        // Display Menu
+        function displayMenu(menu) {
+            const menuList = document.getElementById("menuList");
+            menuList.innerHTML = "";
+            menu.forEach(item => {
+                menuList.innerHTML += `
+                    <div class="bg-white p-4 rounded shadow">
+                        <h3 class="font-semibold">${item.name}</h3>
+                        <p>${item.category} - ${item.price} บาท</p>
+                        <button onclick="addToCart('${item.name}', ${item.price})" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded">เพิ่ม</button>
+                    </div>
+                `;
+            });
+        }
+
+        // Filter Menu
+        function filterMenu(category) {
+            loadMenu().then(menu => {
+                const filtered = menu.filter(item => item.category === category);
+                displayMenu(filtered);
+            });
+        }
+
+        // Add to Cart
+        function addToCart(name, price) {
+            const existingItem = cart.find(item => item.name === name);
+            if (existingItem) {
+                existingItem.quantity++;
+            } else {
+                cart.push({ name, price, quantity: 1 });
+            }
+            updateCart();
+        }
+
+        // Update Cart Display
+        function updateCart() {
+            const cartItems = document.getElementById("cartItems");
+            cartItems.innerHTML = "";
+            let total = 0;
+            cart.forEach(item => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+                cartItems.innerHTML += `
+                    <div class="flex justify-between py-2">
+                        <span>${item.name} x${item.quantity}</span>
+                        <span>${itemTotal} บาท</span>
+                    </div>
+                `;
+            });
+            document.getElementById("totalPrice").textContent = total;
+        }
+
+        // Reset Cart
+        function resetCart() {
+            cart = [];
+            updateCart();
+        }
+
+        // Show/Hide Payment Modal
+        function showPaymentModal() { document.getElementById("paymentModal").classList.remove("hidden"); }
+        function hidePaymentModal() { document.getElementById("paymentModal").classList.add("hidden"); }
+
+        // Submit Order
+        async function submitOrder() {
+            const slipFile = document.getElementById("slipUpload").files[0];
+            if (!slipFile) {
+                alert("กรุณาอัพโหลดสลิป!");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                const slipData = e.target.result.split(",")[1]; // Base64 data
+                const orderData = {
+                    user: userData,
+                    cart: cart,
+                    total: document.getElementById("totalPrice").textContent,
+                    slip: slipData,
+                    timestamp: new Date().toISOString()
+                };
+
+                await fetch("https://script.google.com/macros/s/AKfycbxestjAgoGecDNMvq8iO_F1HFUecUwrJo3gBeD9Hpf1A1o3Rcriq4DG76nLPRCG-1l9/exec?action=submitOrder", {
+                    method: "POST",
+                    body: JSON.stringify(orderData)
+                });
+                alert("คำสั่งซื้อสำเร็จ!");
+                resetCart();
+                hidePaymentModal();
+            };
+            reader.readAsDataURL(slipFile);
+        }
+
+        // Start App
+        initializeLiff();
+    </script>
+</body>
+</html>
