@@ -1,109 +1,128 @@
 <!DOCTYPE html>
-<html lang="th">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minishop - ระบบสั่งอาหาร</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .menu-card {
+            transition: transform 0.2s;
+            border: none;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .menu-card:hover {
+            transform: scale(1.03);
+        }
+        .cart-summary {
+            position: sticky;
+            top: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .filter-btn {
+            margin: 5px;
+            border-radius: 20px;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 font-sans">
-    <div class="container mx-auto p-4">
-        <!-- Header -->
-        <div class="flex items-center justify-between mb-4">
-            <h1 class="text-2xl font-bold">Minishop</h1>
-            <div id="userProfile" class="flex items-center"></div>
+<body>
+    <div class="container">
+        <h2 class="text-center mb-4">Minishop - สั่งอาหารง่ายๆ</h2>
+        
+        <!-- ตัวกรองเมนู -->
+        <div class="text-center mb-4">
+            <button class="btn btn-outline-primary filter-btn" onclick="filterMenu('all')">ทั้งหมด</button>
+            <button class="btn btn-outline-primary filter-btn" onclick="filterMenu('vegetable')">ผัก</button>
+            <button class="btn btn-outline-primary filter-btn" onclick="filterMenu('fruit')">ผลไม้</button>
+            <button class="btn btn-outline-primary filter-btn" onclick="filterMenu('drink')">เครื่องดื่ม</button>
+            <button class="btn btn-outline-primary filter-btn" onclick="filterMenu('meat')">เนื้อสัตว์</button>
+            <button class="btn btn-outline-primary filter-btn" onclick="filterMenu('egg')">ไข่</button>
+            <button class="btn btn-outline-primary filter-btn" onclick="filterMenu('food')">อาหาร</button>
         </div>
 
-        <!-- Menu Filters -->
-        <div class="flex gap-2 mb-4">
-            <button onclick="filterMenu('ผัก')" class="px-4 py-2 bg-blue-500 text-white rounded">ผัก</button>
-            <button onclick="filterMenu('ผลไม้')" class="px-4 py-2 bg-blue-500 text-white rounded">ผลไม้</button>
-            <button onclick="filterMenu('เนื้อสัตว์')" class="px-4 py-2 bg-blue-500 text-white rounded">เนื้อสัตว์</button>
-            <button onclick="filterMenu('สัตว์')" class="px-4 py-2 bg-blue-500 text-white rounded">สัตว์</button>
-            <button onclick="filterMenu('ไข่')" class="px-4 py-2 bg-blue-500 text-white rounded">ไข่</button>
-            <button onclick="filterMenu('อาหาร')" class="px-4 py-2 bg-blue-500 text-white rounded">อาหาร</button>
-            <button onclick="filterMenu('เครื่องดื่ม')" class="px-4 py-2 bg-blue-500 text-white rounded">เครื่องดื่ม</button>
-        </div>
+        <!-- แสดงเมนู -->
+        <div class="row" id="menuContainer"></div>
 
-        <!-- Menu List -->
-        <div id="menuList" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
-
-        <!-- Cart -->
-        <div class="mt-6">
-            <h2 class="text-xl font-semibold">ตะกร้าสินค้า</h2>
-            <div id="cartItems" class="mt-2"></div>
-            <p class="mt-2 font-bold">ยอดรวม: <span id="totalPrice">0</span> บาท</p>
-            <button onclick="resetCart()" class="mt-2 px-4 py-2 bg-red-500 text-white rounded">รีเซ็ตตะกร้า</button>
-            <button onclick="showPaymentModal()" class="mt-2 px-4 py-2 bg-green-500 text-white rounded">ชำระเงิน</button>
-        </div>
-
-        <!-- Payment Modal -->
-        <div id="paymentModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
-            <div class="bg-white p-6 rounded shadow-lg w-96">
-                <h3 class="text-lg font-semibold">อัพโหลดสลิปการชำระเงิน</h3>
-                <input type="file" id="slipUpload" accept="image/*" class="mt-2">
-                <button onclick="submitOrder()" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded">ยืนยัน</button>
-                <button onclick="hidePaymentModal()" class="mt-2 px-4 py-2 bg-gray-500 text-white rounded">ยกเลิก</button>
+        <!-- ตะกร้าสินค้า -->
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="cart-summary">
+                    <h4>ตะกร้าสินค้า</h4>
+                    <div id="cartItems"></div>
+                    <h5>ยอดรวม: <span id="totalPrice">0</span> บาท</h5>
+                    <button class="btn btn-danger w-100 mt-2" onclick="resetCart()">รีเซ็ตตะกร้า</button>
+                    <button class="btn btn-success w-100 mt-2" onclick="submitOrder()">สั่งซื้อ</button>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         let cart = [];
-        let userData = {};
+        let menus = [];
 
-        // Initialize LINE LIFF
+        // Initialize LIFF
         async function initializeLiff() {
-            await liff.init({ liffId: "2007147689-8XMNrLV0" }); // เปลี่ยนเป็น LIFF ID ของคุณ
-            if (liff.isLoggedIn()) {
-                const profile = await liff.getProfile();
-                userData = {
-                    userId: profile.userId,
-                    displayName: profile.displayName,
-                    pictureUrl: profile.pictureUrl
-                };
-                document.getElementById("userProfile").innerHTML = `
-                    <img src="${userData.pictureUrl}" class="w-10 h-10 rounded-full mr-2">
-                    <span>${userData.displayName}</span>
-                `;
-                loadMenu();
-            } else {
+            await liff.init({ liffId: "2007147689-J4dXxE7q" });
+            if (!liff.isLoggedIn()) {
                 liff.login();
             }
+            loadMenus();
         }
 
-        // Load Menu from Google Sheets
-        async function loadMenu() {
-            const response = await fetch("https://script.google.com/macros/s/AKfycbxestjAgoGecDNMvq8iO_F1HFUecUwrJo3gBeD9Hpf1A1o3Rcriq4DG76nLPRCG-1l9/exec?action=getMenu");
-            const menu = await response.json();
-            displayMenu(menu);
+        // โหลดเมนูจาก Google Sheet
+        async function loadMenus() {
+            const response = await fetch('https://script.google.com/macros/s/AKfycbydYdcgvRbfWGS5KBfjyf5mJ-GTzm6MV9DTNphVCQESXl2hZ0eAwmDpFtqf2qvuYB6L/exec?action=getMenus');
+            menus = await response.json();
+            displayMenus(menus);
         }
 
-        // Display Menu
-        function displayMenu(menu) {
-            const menuList = document.getElementById("menuList");
-            menuList.innerHTML = "";
-            menu.forEach(item => {
-                menuList.innerHTML += `
-                    <div class="bg-white p-4 rounded shadow">
-                        <h3 class="font-semibold">${item.name}</h3>
-                        <p>${item.category} - ${item.price} บาท</p>
-                        <button onclick="addToCart('${item.name}', ${item.price})" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded">เพิ่ม</button>
+        // แสดงเมนู
+        function displayMenus(menuList) {
+            const container = document.getElementById('menuContainer');
+            container.innerHTML = '';
+            menuList.forEach(menu => {
+                container.innerHTML += `
+                    <div class="col-md-3 mb-4 menu-item" data-category="${menu.category}">
+                        <div class="card menu-card">
+                            <img src="${menu.image}" class="card-img-top" alt="${menu.name}">
+                            <div class="card-body">
+                                <h5 class="card-title">${menu.name}</h5>
+                                <p class="card-text">${menu.price} บาท</p>
+                                <button class="btn btn-primary w-100" onclick="addToCart('${menu.name}', ${menu.price})">
+                                    เพิ่มลงตะกร้า
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 `;
             });
         }
 
-        // Filter Menu
+        // ตัวกรองเมนู
         function filterMenu(category) {
-            loadMenu().then(menu => {
-                const filtered = menu.filter(item => item.category === category);
-                displayMenu(filtered);
-            });
+            if (category === 'all') {
+                displayMenus(menus);
+            } else {
+                const filtered = menus.filter(menu => menu.category === category);
+                displayMenus(filtered);
+            }
         }
 
-        // Add to Cart
+        // เพิ่มสินค้าลงตะกร้า
         function addToCart(name, price) {
             const existingItem = cart.find(item => item.name === name);
             if (existingItem) {
@@ -114,65 +133,71 @@
             updateCart();
         }
 
-        // Update Cart Display
+        // อัพเดทตะกร้า
         function updateCart() {
-            const cartItems = document.getElementById("cartItems");
-            cartItems.innerHTML = "";
+            const cartItems = document.getElementById('cartItems');
+            cartItems.innerHTML = '';
             let total = 0;
             cart.forEach(item => {
                 const itemTotal = item.price * item.quantity;
                 total += itemTotal;
                 cartItems.innerHTML += `
-                    <div class="flex justify-between py-2">
-                        <span>${item.name} x${item.quantity}</span>
-                        <span>${itemTotal} บาท</span>
-                    </div>
+                    <div>${item.name} x${item.quantity} = ${itemTotal} บาท</div>
                 `;
             });
-            document.getElementById("totalPrice").textContent = total;
+            document.getElementById('totalPrice').textContent = total;
         }
 
-        // Reset Cart
+        // รีเซ็ตตะกร้า
         function resetCart() {
             cart = [];
             updateCart();
+            Swal.fire('สำเร็จ', 'รีเซ็ตตะกร้าเรียบร้อย', 'success');
         }
 
-        // Show/Hide Payment Modal
-        function showPaymentModal() { document.getElementById("paymentModal").classList.remove("hidden"); }
-        function hidePaymentModal() { document.getElementById("paymentModal").classList.add("hidden"); }
-
-        // Submit Order
+        // ส่งคำสั่งซื้อ
         async function submitOrder() {
-            const slipFile = document.getElementById("slipUpload").files[0];
-            if (!slipFile) {
-                alert("กรุณาอัพโหลดสลิป!");
+            if (cart.length === 0) {
+                Swal.fire('ข้อผิดพลาด', 'กรุณาเพิ่มสินค้าก่อนสั่งซื้อ', 'error');
                 return;
             }
 
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                const slipData = e.target.result.split(",")[1]; // Base64 data
-                const orderData = {
-                    user: userData,
-                    cart: cart,
-                    total: document.getElementById("totalPrice").textContent,
-                    slip: slipData,
-                    timestamp: new Date().toISOString()
-                };
+            // แสดง loading
+            const loadingModal = new bootstrap.Modal(document.createElement('div'));
+            loadingModal._element.innerHTML = `
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-body text-center">
+                            <div class="spinner-border" role="status"></div>
+                            <p>กำลังดำเนินการ...</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(loadingModal._element);
+            loadingModal.show();
 
-                await fetch("https://script.google.com/macros/s/AKfycbxestjAgoGecDNMvq8iO_F1HFUecUwrJo3gBeD9Hpf1A1o3Rcriq4DG76nLPRCG-1l9/exec?action=submitOrder", {
-                    method: "POST",
-                    body: JSON.stringify(orderData)
-                });
-                alert("คำสั่งซื้อสำเร็จ!");
-                resetCart();
-                hidePaymentModal();
+            const profile = await liff.getProfile();
+            const order = {
+                userId: profile.userId,
+                name: profile.displayName,
+                phone: prompt('กรุณากรอกเบอร์โทรศัพท์:'),
+                location: prompt('กรุณาวางลิงค์ Google Maps:'),
+                items: cart,
+                total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                timestamp: new Date().toISOString()
             };
-            reader.readAsDataURL(slipFile);
+
+            await fetch('https://script.google.com/macros/s/AKfycbydYdcgvRbfWGS5KBfjyf5mJ-GTzm6MV9DTNphVCQESXl2hZ0eAwmDpFtqf2qvuYB6L/exec', {
+                method: 'POST',
+                body: JSON.stringify({ action: 'submitOrder', order })
+            });
+
+            loadingModal.hide();
+            Swal.fire('สำเร็จ', 'สั่งซื้อเรียบร้อยแล้ว', 'success');
+            resetCart();
         }
 
-        // Start App
         initializeLiff();
     </script>
 </body>
