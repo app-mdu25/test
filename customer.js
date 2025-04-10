@@ -1,7 +1,7 @@
 let cart = [];
 
 document.addEventListener('DOMContentLoaded', () => {
-    liff.init({ liffId: 'YOUR_LIFF_ID' }).then(() => {
+    liff.init({ liffId: '2007147689-xl1Vgq4M' }).then(() => {
         if (liff.isLoggedIn()) {
             const profile = liff.getProfile();
             document.getElementById('loginInfo').innerHTML = `ยินดีต้อนรับ: ${profile.displayName} (Line ID: ${profile.userId})`;
