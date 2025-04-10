@@ -98,7 +98,7 @@ function validateOrder() {
 }
 
 function googleScriptFetch(endpoint, data, callback) {
-    fetch(`https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec?endpoint=${endpoint}`, {
+    fetch(`https://script.google.com/macros/s/AKfycbyCEGKegOY1ItI5XN1KnALWr_ygwaVWwI7zvlVl9QYWcMq2_A-a92wnlTpbMltCJMsmig/exec?endpoint=${endpoint}`, {
         method: 'POST',
         body: JSON.stringify(data),
         headers: { 'Content-Type': 'application/json' }
@@ -110,7 +110,7 @@ function sendLineNotification(lineId, message) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': 'Bearer YOUR_LINE_CHANNEL_ACCESS_TOKEN'
+            'Authorization': 'Bearer GIyRK3lfQnwUnXefVGv5dBUUMbgIsRfDKRjJ7quMHU0uGTWVZ1Z9F4JIIXdn/KAplz5aKr9bGVnleaWZjcjbqFNwQEX3tsJbibezDgW6az65xj0zuLUQiI3gBBHJoEq31dAFmbleZF6foZvmj794VgdB04t89/1O/w1cDnyilFU='
         },
         body: JSON.stringify({
             to: lineId,
